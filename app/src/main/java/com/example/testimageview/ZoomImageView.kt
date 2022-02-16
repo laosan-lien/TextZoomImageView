@@ -2,14 +2,10 @@ package com.example.testimageview
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
+import android.graphics.Matrix
 import android.graphics.PointF
-import android.opengl.Matrix
-
 import android.util.AttributeSet
 import android.util.Log
-import android.widget.ImageView
 
 
 private const val TAG = "NativeUi:ZoomImageView"
@@ -32,18 +28,20 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView {
         init()
     }
 
+    private lateinit var  mMatrix: Matrix
     private lateinit var viewSize: PointF
     private lateinit var imageSize: PointF
 
     //缩放后图片的大小
     private var scaleSize = PointF()
 
-    //最初的宽高的缩放比例
-//    private lateinit var originScale :PointF
+//    最初的宽高的缩放比例
+    private lateinit var originScale :PointF
 
 
     private fun init() {
-//        scaleType = ScaleType.MATRIX
+        scaleType = ScaleType.MATRIX
+        mMatrix = Matrix()
     }
 
 
@@ -55,11 +53,14 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView {
         val width = MeasureSpec.getSize(widthMeasureSpec)
         val height = MeasureSpec.getSize(heightMeasureSpec)
         viewSize = PointF(width.toFloat(), height.toFloat())
-        imageSize = PointF(width.toFloat(), width.toFloat())
-
+        imageSize = PointF(drawable.minimumWidth.toFloat(), drawable.minimumHeight.toFloat())
         showCenter()
     }
 
+
+    /**
+     * 设置图片居中等比显示
+     */
     private fun showCenter() {
         Log.d(TAG, "showCenter")
         val scaleX = viewSize.x / imageSize.x
@@ -74,19 +75,12 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView {
      */
     private fun scaleImage(scaleXY: PointF) {
         Log.d(TAG, "scaleImage: ")
-        matrix.setScale(0.1f, 0.1f)
-        matrix.setRotate(30f)
+        mMatrix.setScale(scaleXY.x , scaleXY.y)
         scaleSize.set(scaleXY.x * imageSize.x, scaleXY.y * imageSize.y)
-        imageMatrix = matrix
-    }
+        imageMatrix = mMatrix
 
-    @SuppressLint("DrawAllocation")
-    override fun onDraw(canvas: Canvas?) {
-        super.onDraw(canvas)
-        canvas?.save()
-        canvas?.drawBitmap(BitmapFactory.decodeResource(resources, R.drawable.img), matrix , null)
-    }
 
+    }
 
 
 
