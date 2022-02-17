@@ -9,6 +9,8 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
+import android.view.MotionEvent
+import android.view.View
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.FileNotFoundException
@@ -31,8 +33,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         println("**********************************")
-        val imageUri = "content://media/external/images/media/1084"
-        val defaultImageUri = "content://media/external/images/media/1085"
+        val imageUri = "content://media/external/images/media/33"
+        val defaultImageUri = "content://media/external/images/media/33"
         val parsedUri = Uri.parse(defaultImageUri)
         println(removeUriId(parsedUri))
         previewImage(imageUri, defaultImageUri)
@@ -76,6 +78,7 @@ class MainActivity : AppCompatActivity() {
         val parsedDefaultUri = Uri.parse(defaultUri)
         if (!loadImage(parsedImageUri) && !loadImage(parsedDefaultUri)) {
             image_view.setImageDrawable(this.getDrawable(R.drawable.no_resources_found))
+            
         }
     }
 
