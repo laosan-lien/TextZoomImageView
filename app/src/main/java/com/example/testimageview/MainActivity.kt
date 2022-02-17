@@ -31,11 +31,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         println("**********************************")
-        val imageUri = "content://media/external/images/media/33"
-        val defaultImageUri = "content://media/external/images/media/33"
+        val imageUri = "content://media/external/images/media/1084"
+        val defaultImageUri = "content://media/external/images/media/1085"
         val parsedUri = Uri.parse(defaultImageUri)
         println(removeUriId(parsedUri))
-
         previewImage(imageUri, defaultImageUri)
 ////
 //        val videoUri = "conten://media/external/video/media"
@@ -45,7 +44,7 @@ class MainActivity : AppCompatActivity() {
 
         //查找视频文件
         val cursor = contentResolver.query(
-            MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
             null,
             null,
             null,
@@ -54,12 +53,12 @@ class MainActivity : AppCompatActivity() {
 
         if (cursor != null) {
             while (cursor.moveToNext()) {
-                val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID))
-
+                val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
+                println(id)
                 val uri = ContentUris.withAppendedId(
                     MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
                 )
-                println(uri)
+                println("flsoan:${uri}")
             }
         }
         println("**********************************")
@@ -147,20 +146,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun checkHttpUrl(httpUrl:Uri){
 
-    private fun previewVideo(videoUri: String, defaultUri: String) {
-//        checkUri(CHECK_TYPE_VIDEO, videoUri)
-        video_view.apply {
-            setVideoURI(Uri.parse(videoUri))
-            start()
-            setOnErrorListener { _, _, _ ->
-                Toast.makeText(this@MainActivity, "未找到指定视频", Toast.LENGTH_SHORT).show()
-                setVideoURI(Uri.parse(defaultUri))
-                start()
-                return@setOnErrorListener true
-            }
-        }
 
     }
+
+
+//    private fun previewVideo(videoUri: String, defaultUri: String) {
+////        checkUri(CHECK_TYPE_VIDEO, videoUri)
+//        video_view.apply {
+//            setVideoURI(Uri.parse(videoUri))
+//            start()
+//            setOnErrorListener { _, _, _ ->
+//                Toast.makeText(this@MainActivity, "未找到指定视频", Toast.LENGTH_SHORT).show()
+//                setVideoURI(Uri.parse(defaultUri))
+//                start()
+//                return@setOnErrorListener true
+//            }
+//        }
+//
+//    }
 }
 
