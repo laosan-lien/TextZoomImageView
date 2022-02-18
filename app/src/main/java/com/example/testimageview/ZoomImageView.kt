@@ -8,7 +8,9 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
-
+import java.util.*
+import kotlin.math.abs
+import kotlin.math.sqrt
 
 
 private const val TAG = "NativeUi:ZoomImageView"
@@ -30,18 +32,22 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
 
     enum class ZoomMode {
         ORDINARY,
-        ENLARGEMENT,
-        NARROW
+        DOUBLE_CLICK_ZOOM,
+        DOUBLE_FINGER_ZOOM
     }
 
     private lateinit var mMatrix: Matrix
+
+    //ImageView的大小
     private lateinit var viewSize: PointF
+
+    //图片的大小
     private lateinit var imageSize: PointF
 
     //缩放后图片的大小
     private var scaleSize = PointF()
 
-    //    最初的宽高的缩放比例
+    //最初的宽高的缩放比例
     private var originScale = PointF()
 
     //imageview中bitmap的xy实时坐标
@@ -57,13 +63,28 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
     private var lastClickTime: Long = 0
 
     //双击放大的倍数
-    private val doubleClickZoom = 3
+    private val doubleClickZoom = 2
 
     //当前缩放的模式
-    private var zoomInMode: Int = ZoomMode.ENLARGEMENT.ordinal
+    private var zoomInMode: Int = ZoomMode.DOUBLE_CLICK_ZOOM.ordinal
 
     //临时坐标比例数据
     private val tempPoint = PointF()
+
+    //最大缩放比例
+    private val maxScroll = 2F
+
+    //两点之间的距离
+    private var doublePointInstance = 1F
+
+    //双指缩放的时候的中心点
+    private var doublePointCenter = PointF()
+
+    //双指缩放的比例
+    private var doubleFingerScroll = 0F
+
+    //上次触碰的手指数量
+    private var lastFingerNum = 0
 
     private fun init() {
         scaleType = ScaleType.MATRIX
@@ -104,6 +125,7 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
         }
         //保存下最初的缩放比例
         originScale.set(scale, scale)
+        doubleFingerScroll = scale
     }
 
     /**
@@ -159,7 +181,7 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
                                     clickPoint.y - (bitmapOriginPoint.y + tempPoint.y * scaleSize.y)
                                 )
                             )
-                            zoomInMode = ZoomMode.NARROW.ordinal
+                            zoomInMode = ZoomMode.DOUBLE_FINGER_ZOOM.ordinal
                         } else {
                             //双击还原
                             showCenter()
@@ -169,20 +191,81 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
                         lastClickTime = System.currentTimeMillis()
                     }
                 }
+                //双击放大后记录缩放比例
+                doubleFingerScroll = originScale.x * doubleClickZoom
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
                 //屏幕上已经有一个手指按下，第二点按下时促发该事件
+                //计算最初的两个手指之间的距离
+                doublePointInstance = getDoublePointInstance(event)
+                Log.d(TAG, "onTouch: doublePointInstance:${doublePointInstance}")
             }
             MotionEvent.ACTION_POINTER_UP -> {
                 //屏幕上已经有两个点按住 再松开一个点时触发该事件
-
+                //当有一个手指离开屏幕后，就修改状态，这样如果双击屏幕就能恢复到初始大小
+                zoomInMode = ZoomMode.DOUBLE_CLICK_ZOOM.ordinal
+                //记录此时双指缩放的比例
+                doubleFingerScroll = scaleSize.x / imageSize.x
             }
             MotionEvent.ACTION_MOVE -> {
                 //手指移动时触发事件
+                //缩放
+                //判断当前是两个手指触摸到屏幕才处理缩放事件
+                if (event.pointerCount == 2) {
+                    //如果此时缩放后的大小，大于等于了设置的最大缩放的大小，就不处理
+                    if (!((scaleSize.x / imageSize.x >= originScale.x * maxScroll ||
+                                scaleSize.y / imageSize.y >= originScale.y * maxScroll)
+                                && getDoublePointInstance(event) - doublePointInstance > 0
+                                )
+                    ) {
+                        //这里设置当双指缩放的的距离变化量大于50，并且当前不是在双指缩放状态下，
+                        //就计算中心点，等一些操作
+                        Log.d(TAG, "onTouch: 3")
+                        if (abs(getDoublePointInstance(event) - doublePointInstance) > 50
+                            && zoomInMode != ZoomMode.DOUBLE_FINGER_ZOOM.ordinal
+                        ) {
+                            Log.d(TAG, "onTouch: 4")
+                            //计算两个手指之间的中心点，当作放大的中心点
+                            doublePointCenter.set(
+                                (event.getX(0) + event.getX(1)) / 2,
+                                (event.getY(0) + event.getY(2)) / 2
+                            )
+                            //将双指的中心假设为点击的点
+                            clickPoint.set(doublePointCenter)
+                            //下面就和双击放大基本一样
+                            getBitmapOffset()
+                            //分别记录被点击的点到图片左上角x，y之间的距离与图片x，y轴边长的比例
+                            //方便在缩放后算出这个点对应的坐标点
+                            tempPoint.set(
+                                (clickPoint.x - bitmapOriginPoint.x) / scaleSize.x,
+                                (clickPoint.y - bitmapOriginPoint.y) / scaleSize.y
+                            )
+                            //设置进入双指放大状态
+                            zoomInMode = ZoomMode.DOUBLE_FINGER_ZOOM.ordinal
+                        }
+                        //如果已经进入双指放大状态，就直接计算缩放的比例，并进行位移
+                        if (zoomInMode == ZoomMode.DOUBLE_FINGER_ZOOM.ordinal) {
+                            Log.d(TAG, "onTouch: 5")
+                            //当前的缩放的比例与当前双指之间的缩放比例相乘，就得到图片的应该缩放的比例
+                            val scroll =
+                                doubleFingerScroll * getDoublePointInstance(event) / doublePointInstance
+                            //这里和双击放大是一样的
+                            scaleImage(PointF(scroll, scroll))
+                            getBitmapOffset()
+                            translationImage(
+                                PointF(
+                                    clickPoint.x - (bitmapOriginPoint.x + tempPoint.x * scaleSize.x),
+                                    clickPoint.y - (bitmapOriginPoint.y + tempPoint.y * scaleSize.y)
+                                )
+                            )
+                        }
+                    }
+                }
 
             }
             MotionEvent.ACTION_UP -> {
                 //手指松开时触发事件
+                lastFingerNum = 0
 
             }
             else -> {
@@ -190,6 +273,12 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
             }
         }
         return true
+    }
+
+    private fun getDoublePointInstance(event: MotionEvent): Float {
+        val distanceX = event.getX(0) - event.getX(1)
+        val distanceY = event.getY(0) - event.getY(1)
+        return sqrt((distanceX * distanceX + distanceY * distanceY).toDouble()).toFloat()
     }
 
     /**
