@@ -8,7 +8,6 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
-import java.util.*
 import kotlin.math.abs
 import kotlin.math.sqrt
 
@@ -175,6 +174,15 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
                             //获取缩放后，图片左上角的xy坐标
                             getBitmapOffset()
                             //平移图片，使得被点击的点的位置不变。这里是计算缩放后被点击的xy坐标，与原始点击的位置的xy标值，计算出差值，然后做平移动作
+                            println(
+                                "2clickPoint.x = ${clickPoint.x} - (bitmapOriginPoint.x = ${bitmapOriginPoint.x}" +
+                                        " tempPoint.x =${tempPoint.x} *scaleSize.x${scaleSize.x}"
+                            )
+                            println(
+                                "clickPoint.y = ${clickPoint.y} - (bitmapOriginPoint.y = ${bitmapOriginPoint.y}" +
+                                        " tempPoint.y =${tempPoint.y} *scaleSize.y =${scaleSize.y}"
+                            )
+
                             translationImage(
                                 PointF(
                                     clickPoint.x - (bitmapOriginPoint.x + tempPoint.x * scaleSize.x),
@@ -182,17 +190,18 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
                                 )
                             )
                             zoomInMode = ZoomMode.DOUBLE_FINGER_ZOOM.ordinal
+                            doubleFingerScroll = originScale.x * doubleClickZoom
                         } else {
                             //双击还原
                             showCenter()
                             zoomInMode = ZoomMode.ORDINARY.ordinal
+                            doubleFingerScroll = originScale.x
                         }
+                        //双击放大后记录缩放比例
                     } else {
                         lastClickTime = System.currentTimeMillis()
                     }
                 }
-                //双击放大后记录缩放比例
-                doubleFingerScroll = originScale.x * doubleClickZoom
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
                 //屏幕上已经有一个手指按下，第二点按下时促发该事件
@@ -206,9 +215,45 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
                 zoomInMode = ZoomMode.DOUBLE_CLICK_ZOOM.ordinal
                 //记录此时双指缩放的比例
                 doubleFingerScroll = scaleSize.x / imageSize.x
+                lastFingerNum = 1
+                //判断缩放后的比例，如果小于最初的那个比例，就恢复到最初的大小
+                if (scaleSize.x < viewSize.x && scaleSize.y < viewSize.y) {
+                    zoomInMode = ZoomMode.ORDINARY.ordinal
+                    showCenter()
+                }
             }
             MotionEvent.ACTION_MOVE -> {
                 //手指移动时触发事件
+                //移动
+                if (zoomInMode != ZoomMode.ORDINARY.ordinal) {
+                    //如果是多指，计算中心点为假设的点击的点
+                    var currentX = 0f
+                    var currentY = 0f
+                    //获取此时屏幕上被触碰的点有多少个
+                    val pointCount = event.pointerCount
+                    //计算出中间点所在的坐标
+                    for (i in 0 until pointCount) {
+                        currentX += event.getX(i)
+                        currentY += event.getY(i)
+                    }
+                    currentX /= pointCount.toFloat()
+                    currentY /= pointCount.toFloat()
+                    //当屏幕被触碰的点的数量变化时，将最新算出来的中心点看作是被点击的点
+                    if (lastFingerNum != event.pointerCount) {
+                        clickPoint.x = currentX
+                        clickPoint.y = currentY
+                        lastFingerNum = event.pointerCount
+                    }
+                    //将移动手指时，实时计算出来的中心点坐标，减去被点击点的坐标就得到了需要移动的距离
+                    val moveX = currentX - clickPoint.x
+                    val moveY = currentY - clickPoint.y
+                    //计算边界，使得不能已出边界，但是如果是双指缩放时移动，因为存在缩放效果，
+                    //所以此时的边界判断无效
+                    val moveFloat: FloatArray = moveBorderDistance(moveX, moveY)
+                    //处理移动图片的事件
+                    translationImage(PointF(moveFloat[0], moveFloat[1]))
+                    clickPoint.set(currentX, currentY)
+                }
                 //缩放
                 //判断当前是两个手指触摸到屏幕才处理缩放事件
                 if (event.pointerCount == 2) {
@@ -228,7 +273,7 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
                             //计算两个手指之间的中心点，当作放大的中心点
                             doublePointCenter.set(
                                 (event.getX(0) + event.getX(1)) / 2,
-                                (event.getY(0) + event.getY(2)) / 2
+                                (event.getY(0) + event.getY(1)) / 2
                             )
                             //将双指的中心假设为点击的点
                             clickPoint.set(doublePointCenter)
@@ -252,6 +297,14 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
                             //这里和双击放大是一样的
                             scaleImage(PointF(scroll, scroll))
                             getBitmapOffset()
+                            println(
+                                "2clickPoint.x = ${clickPoint.x} - (bitmapOriginPoint.x = ${bitmapOriginPoint.x}" +
+                                        " tempPoint.x =${tempPoint.x} *scaleSize.x${scaleSize.x}"
+                            )
+                            println(
+                                "clickPoint.y = ${clickPoint.y} - (bitmapOriginPoint.y = ${bitmapOriginPoint.y}" +
+                                        " tempPoint.y =${tempPoint.y} *scaleSize.y =${scaleSize.y}"
+                            )
                             translationImage(
                                 PointF(
                                     clickPoint.x - (bitmapOriginPoint.x + tempPoint.x * scaleSize.x),
@@ -261,7 +314,6 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
                         }
                     }
                 }
-
             }
             MotionEvent.ACTION_UP -> {
                 //手指松开时触发事件
@@ -275,6 +327,60 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
         return true
     }
 
+    private fun moveBorderDistance(moveX: Float, moveY: Float): FloatArray {
+        var moveDistanceX = moveX
+        var moveDistanceY = moveY
+        //计算bitmap的左上角坐标
+        getBitmapOffset()
+        //计算bitmap的右下角坐标
+        val bitmapRightBottomX = bitmapOriginPoint.x + scaleSize.x
+        val bitmapRightBottomY = bitmapOriginPoint.y + scaleSize.y
+
+        if (moveDistanceY > 0) {
+            //向下滑
+            if (bitmapOriginPoint.y + moveDistanceY > 0) {
+                moveDistanceY = if (bitmapOriginPoint.y < 0) {
+                    -bitmapOriginPoint.y
+                } else {
+                    0f
+                }
+            }
+        } else if (moveDistanceY < 0) {
+            //向上滑
+            if (bitmapRightBottomY + moveDistanceY < viewSize.y) {
+                moveDistanceY = if (bitmapRightBottomY > viewSize.y) {
+                    -(bitmapRightBottomY - viewSize.y)
+                } else {
+                    0f
+                }
+            }
+        }
+
+        if (moveDistanceX > 0) {
+            //向右滑
+            if (bitmapOriginPoint.x + moveDistanceX > 0) {
+                moveDistanceX = if (bitmapOriginPoint.x < 0) {
+                    -bitmapOriginPoint.x
+                } else {
+                    0f
+                }
+            }
+        } else if (moveDistanceX < 0) {
+            //向左滑
+            if (bitmapRightBottomX + moveDistanceX < viewSize.x) {
+                moveDistanceX = if (bitmapRightBottomX > viewSize.x) {
+                    -(bitmapRightBottomX - viewSize.x)
+                } else {
+                    0f
+                }
+            }
+        }
+        return floatArrayOf(moveDistanceX, moveDistanceY)
+    }
+
+    /**
+     * 计算两个手指之间的距离
+     */
     private fun getDoublePointInstance(event: MotionEvent): Float {
         val distanceX = event.getX(0) - event.getX(1)
         val distanceY = event.getY(0) - event.getY(1)
@@ -293,6 +399,4 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
         offset[1] = value[5]
         bitmapOriginPoint.set(offset[0], offset[1])
     }
-
-
 }

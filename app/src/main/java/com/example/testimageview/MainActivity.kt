@@ -33,12 +33,12 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         println("**********************************")
-        val imageUri = "content://media/external/images/media/33"
-        val defaultImageUri = "content://media/external/images/media/33"
+        val imageUri = "content://media/external/images/media/4"
+        val defaultImageUri = "content://media/external/images/media/48"
         val parsedUri = Uri.parse(defaultImageUri)
         println(removeUriId(parsedUri))
         previewImage(imageUri, defaultImageUri)
-////
+
 //        val videoUri = "conten://media/external/video/media"
 //        val defaultVideoUri = "content://media/external/video/media/36"
 //        previewVideo(videoUri, defaultVideoUri)
