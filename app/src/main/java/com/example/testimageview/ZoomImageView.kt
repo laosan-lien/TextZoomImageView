@@ -91,7 +91,6 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
         setOnTouchListener(this)
     }
 
-    //TODO：更改
     @SuppressLint("DrawAllocation")
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         Log.d(TAG, "onMeasure")

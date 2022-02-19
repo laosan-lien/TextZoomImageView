@@ -2,19 +2,14 @@ package com.example.testimageview
 
 import android.annotation.SuppressLint
 import android.content.ContentUris
-import android.content.res.Resources
 import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
-import android.view.MotionEvent
-import android.view.View
-import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.FileNotFoundException
-import java.lang.NumberFormatException
 
 private const val TAG = "NativeUi:MainActivity"
 private const val IMAGE_EXTERNAL_CONTENT_URI = "content://media/external/images/media"
