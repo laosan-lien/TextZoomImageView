@@ -7,6 +7,8 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.MediaController
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.FileNotFoundException
@@ -34,32 +36,15 @@ class MainActivity : AppCompatActivity() {
         println(removeUriId(parsedUri))
         previewImage(imageUri, defaultImageUri)
 
-//        val videoUri = "conten://media/external/video/media"
-//        val defaultVideoUri = "content://media/external/video/media/36"
-//        previewVideo(videoUri, defaultVideoUri)
-
-
-        //查找视频文件
-        val cursor = contentResolver.query(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            null,
-            null,
-            null,
-            null
-        )
-
-        if (cursor != null) {
-            while (cursor.moveToNext()) {
-                val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
-                println(id)
-                val uri = ContentUris.withAppendedId(
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
-                )
-                println("flsoan:${uri}")
-            }
-        }
+        val videoUri = "content://media/external/video/media/36"
+        val defaultVideoUri = "content://media/external/video/media/36"
+        previewVideo(videoUri, defaultVideoUri)
+        Utils.printMediaDetails(this, "image")
+        Utils.printMediaDetails(this, "video")
         println("**********************************")
     }
+
+
 
     /**
      * 获取媒体文件的三种方式：
@@ -73,7 +58,7 @@ class MainActivity : AppCompatActivity() {
         val parsedDefaultUri = Uri.parse(defaultUri)
         if (!loadImage(parsedImageUri) && !loadImage(parsedDefaultUri)) {
             image_view.setImageDrawable(this.getDrawable(R.drawable.no_resources_found))
-            
+
         }
     }
 
@@ -144,25 +129,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun checkHttpUrl(httpUrl:Uri){
-
-
+    //TODO:填上内容
+    private fun checkHttpUrl(httpUrl: Uri): Boolean {
+        return true
     }
 
-
-//    private fun previewVideo(videoUri: String, defaultUri: String) {
-////        checkUri(CHECK_TYPE_VIDEO, videoUri)
-//        video_view.apply {
-//            setVideoURI(Uri.parse(videoUri))
-//            start()
-//            setOnErrorListener { _, _, _ ->
-//                Toast.makeText(this@MainActivity, "未找到指定视频", Toast.LENGTH_SHORT).show()
-//                setVideoURI(Uri.parse(defaultUri))
-//                start()
-//                return@setOnErrorListener true
-//            }
-//        }
-//
-//    }
+    //TODO：通过fragment实现一个activity同时支持展示image和video
+    private fun previewVideo(videoUri: String, defaultUri: String) {
+        video_view.apply {
+            setMediaController(MediaController(context))
+            setVideoURI(Uri.parse(videoUri))
+            start()
+            setOnErrorListener { _, _, _ ->
+                Toast.makeText(this@MainActivity, "未找到指定视频", Toast.LENGTH_SHORT).show()
+                setVideoURI(Uri.parse(defaultUri))
+                start()
+                return@setOnErrorListener true
+            }
+        }
+    }
 }
 
