@@ -1,11 +1,9 @@
 package com.example.testimageview
 
 import android.annotation.SuppressLint
-import android.content.ContentUris
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.MediaController
 import android.widget.Toast
@@ -45,7 +43,6 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-
     /**
      * 获取媒体文件的三种方式：
     1、文件流(use)
@@ -62,9 +59,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
     private fun loadImage(uri: Uri): Boolean {
-        if (!checkUri(CHECK_TYPE_IMAGE, uri)) {
+        if (!checkUri(CHECK_TYPE_IMAGE, uri.toString())) {
             return false
         }
         try {
@@ -78,8 +74,26 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    private fun checkUri(checkType: String, uri: Uri): Boolean {
-        val uriWithoutID = removeUriId(uri)
+    private fun checkUri(type: String, uri: String): Boolean {
+        var isValid = false
+        if (uri.isNotEmpty()) {
+            when (Uri.parse(uri).scheme) {
+                "http", "https" -> {
+                    isValid = checkHttpUrl(uri)
+                }
+                "content" -> {
+                    isValid = checkContentUri(type, uri)
+                }
+                else -> {
+                    Log.d(TAG, "The scheme:${Uri.parse(uri).scheme} of the URI is incorrect")
+                }
+            }
+        }
+        return isValid
+    }
+
+    private fun checkContentUri(checkType: String, uri: String): Boolean {
+        val uriWithoutID = removeUriId(Uri.parse(uri))
         if (uriWithoutID == null) {
             return false
         } else {
@@ -130,9 +144,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     //TODO:填上内容
-    private fun checkHttpUrl(httpUrl: Uri): Boolean {
+    private fun checkHttpUrl(httpUrl: String): Boolean {
         return true
     }
+
 
     //TODO：通过fragment实现一个activity同时支持展示image和video
     private fun previewVideo(videoUri: String, defaultUri: String) {
