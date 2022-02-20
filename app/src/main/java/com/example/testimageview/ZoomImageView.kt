@@ -163,31 +163,10 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
                                 (clickPoint.x - bitmapOriginPoint.x) / scaleSize.x,
                                 (clickPoint.y - bitmapOriginPoint.y) / scaleSize.y
                             )
-                            //进行缩放
-                            scaleImage(
-                                PointF(
-                                    originScale.x * doubleClickZoom,
-                                    originScale.y * doubleClickZoom
-                                )
-                            )
-                            //获取缩放后，图片左上角的xy坐标
-                            getBitmapOffset()
-                            //平移图片，使得被点击的点的位置不变。这里是计算缩放后被点击的xy坐标，与原始点击的位置的xy标值，计算出差值，然后做平移动作
-                            println(
-                                "2clickPoint.x = ${clickPoint.x} - (bitmapOriginPoint.x = ${bitmapOriginPoint.x}" +
-                                        " tempPoint.x =${tempPoint.x} *scaleSize.x${scaleSize.x}"
-                            )
-                            println(
-                                "clickPoint.y = ${clickPoint.y} - (bitmapOriginPoint.y = ${bitmapOriginPoint.y}" +
-                                        " tempPoint.y =${tempPoint.y} *scaleSize.y =${scaleSize.y}"
-                            )
-
-                            translationImage(
-                                PointF(
-                                    clickPoint.x - (bitmapOriginPoint.x + tempPoint.x * scaleSize.x),
-                                    clickPoint.y - (bitmapOriginPoint.y + tempPoint.y * scaleSize.y)
-                                )
-                            )
+                            //进行缩放平移
+                            val scaleX = originScale.x * doubleClickZoom
+                            val scaleY = originScale.y * doubleClickZoom
+                            scaleAndDTranslate(scaleX, scaleY)
                             zoomInMode = ZoomMode.DOUBLE_FINGER_ZOOM.ordinal
                             doubleFingerScroll = originScale.x * doubleClickZoom
                         } else {
@@ -224,6 +203,7 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
             MotionEvent.ACTION_MOVE -> {
                 //手指移动时触发事件
                 //移动
+                //TODO:图片移动和缩放的兼容问题
                 if (zoomInMode != ZoomMode.ORDINARY.ordinal) {
                     //如果是多指，计算中心点为假设的点击的点
                     var currentX = 0f
@@ -291,25 +271,10 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
                         if (zoomInMode == ZoomMode.DOUBLE_FINGER_ZOOM.ordinal) {
                             Log.d(TAG, "onTouch: 5")
                             //当前的缩放的比例与当前双指之间的缩放比例相乘，就得到图片的应该缩放的比例
-                            val scroll =
+                            val scale =
                                 doubleFingerScroll * getDoublePointInstance(event) / doublePointInstance
                             //这里和双击放大是一样的
-                            scaleImage(PointF(scroll, scroll))
-                            getBitmapOffset()
-                            println(
-                                "2clickPoint.x = ${clickPoint.x} - (bitmapOriginPoint.x = ${bitmapOriginPoint.x}" +
-                                        " tempPoint.x =${tempPoint.x} *scaleSize.x${scaleSize.x}"
-                            )
-                            println(
-                                "clickPoint.y = ${clickPoint.y} - (bitmapOriginPoint.y = ${bitmapOriginPoint.y}" +
-                                        " tempPoint.y =${tempPoint.y} *scaleSize.y =${scaleSize.y}"
-                            )
-                            translationImage(
-                                PointF(
-                                    clickPoint.x - (bitmapOriginPoint.x + tempPoint.x * scaleSize.x),
-                                    clickPoint.y - (bitmapOriginPoint.y + tempPoint.y * scaleSize.y)
-                                )
-                            )
+                            scaleAndDTranslate(scale, scale)
                         }
                     }
                 }
@@ -325,6 +290,31 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
         }
         return true
     }
+
+    /**
+     * 缩放+位移
+     */
+    private fun scaleAndDTranslate(scaleX: Float, scaleY: Float) {
+        scaleImage(PointF(scaleX, scaleY))
+        //获取缩放后，图片左上角的xy坐标
+        getBitmapOffset()
+        //平移图片，使得被点击的点的位置不变。这里是计算缩放后被点击的xy坐标，与原始点击的位置的xy标值，计算出差值，然后做平移动作
+        println(
+            "2clickPoint.x = ${clickPoint.x} - (bitmapOriginPoint.x = ${bitmapOriginPoint.x}" +
+                    " tempPoint.x =${tempPoint.x} *scaleSize.x${scaleSize.x}"
+        )
+        println(
+            "clickPoint.y = ${clickPoint.y} - (bitmapOriginPoint.y = ${bitmapOriginPoint.y}" +
+                    " tempPoint.y =${tempPoint.y} *scaleSize.y =${scaleSize.y}"
+        )
+        translationImage(
+            PointF(
+                clickPoint.x - (bitmapOriginPoint.x + tempPoint.x * scaleSize.x),
+                clickPoint.y - (bitmapOriginPoint.y + tempPoint.y * scaleSize.y)
+            )
+        )
+    }
+
 
     private fun moveBorderDistance(moveX: Float, moveY: Float): FloatArray {
         var moveDistanceX = moveX
