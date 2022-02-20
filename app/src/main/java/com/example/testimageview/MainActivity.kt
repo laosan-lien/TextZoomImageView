@@ -145,9 +145,11 @@ class MainActivity : AppCompatActivity() {
 
     //TODO:填上内容
     private fun checkHttpUrl(httpUrl: String): Boolean {
+        if(httpUrl.isNotEmpty()){
+            return Uri.parse(httpUrl) .scheme == "http"|| Uri.parse(httpUrl) .scheme == "https"
+        }
         return true
     }
-
 
     //TODO：通过fragment实现一个activity同时支持展示image和video
     private fun previewVideo(videoUri: String, defaultUri: String) {
