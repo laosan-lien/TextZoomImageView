@@ -4,28 +4,26 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".PreviewMediaActivity">
 
-
-    <Button
-        android:id="@+id/previewImage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="preview image"
-        app:layout_constraintBottom_toTopOf="@id/previewVideo"
+    <com.example.testimageview.ZoomImageView
+        android:id="@+id/image_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/video_view"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_weight="1" />
 
-    <Button
-        android:id="@+id/previewVideo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="preview video"
+    <VideoView
+        android:id="@+id/video_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="@id/previewImage" />
-
+        app:layout_constraintTop_toBottomOf="@id/image_view"
+        app:layout_constraintVertical_weight="1" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
