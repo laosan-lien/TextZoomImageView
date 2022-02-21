@@ -4,7 +4,9 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="..\:/Androidproject_TEST/TextZoomImageView/app/src/main/res/layout/activity_main.xml" value="0.20416666666666666" />
+        <entry key="..\:/Androidproject_TEST/TextZoomImageView/app/src/main/res/layout/activity_preview_image.xml" value="0.3651041666666667" />
         <entry key="..\:/Androidproject_TEST/TextZoomImageView/app/src/main/res/layout/activity_preview_media.xml" value="0.2140625" />
+        <entry key="..\:/Androidproject_TEST/TextZoomImageView/app/src/main/res/layout/fragment_preview_image.xml" value="0.3651041666666667" />
         <entry key="..\:/Projects/AndroidProjects/study/TestImageView/app/src/main/res/layout/activity_main.xml" value="0.32864583333333336" />
       </map>
     </option>

@@ -62,7 +62,7 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
     private var lastClickTime: Long = 0
 
     //双击放大的倍数
-    private val doubleClickZoom = 2
+    private val doubleClickZoom = 3
 
     //当前缩放的模式
     private var zoomInMode: Int = ZoomMode.DOUBLE_CLICK_ZOOM.ordinal
@@ -71,7 +71,7 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
     private val tempPoint = PointF()
 
     //最大缩放比例
-    private val maxScroll = 2F
+    private val maxScale = 4F
 
     //两点之间的距离
     private var doublePointInstance = 1F
@@ -237,8 +237,8 @@ class ZoomImageView : androidx.appcompat.widget.AppCompatImageView, View.OnTouch
                 //判断当前是两个手指触摸到屏幕才处理缩放事件
                 if (event.pointerCount == 2) {
                     //如果此时缩放后的大小，大于等于了设置的最大缩放的大小，就不处理
-                    if (!((scaleSize.x / imageSize.x >= originScale.x * maxScroll ||
-                                scaleSize.y / imageSize.y >= originScale.y * maxScroll)
+                    if (!((scaleSize.x / imageSize.x >= originScale.x * maxScale ||
+                                scaleSize.y / imageSize.y >= originScale.y * maxScale)
                                 && getDoublePointInstance(event) - doublePointInstance > 0
                                 )
                     ) {

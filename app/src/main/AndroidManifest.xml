@@ -13,7 +13,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TestImageView">
         <activity
-            android:name=".PreviewMediaActivity"
+            android:name=".PreviewImageActivity"
+            android:exported="true" />
+        <activity
+            android:name=".PreviewImageActivity"
             android:exported="true" />
         <activity
             android:name=".MainActivity"

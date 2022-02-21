@@ -17,13 +17,13 @@ class MainActivity : AppCompatActivity() {
         previewImage.setOnClickListener {
             val imageUri = "content://media/external/images/media/1085"
             val defaultImageUri = "content://media/external/images/media/48"
-            PreviewMediaActivity.start(this, imageUri, defaultImageUri, true)
+            PreviewImageActivity.start(this, imageUri, defaultImageUri, true)
         }
 
         previewVideo.setOnClickListener {
             val videoUri = "content://media/external/video/media/36"
             val defaultVideoUri = "content://media/external/video/media/1084"
-            PreviewMediaActivity.start(this, videoUri, defaultVideoUri, true)
+            PreviewVideoActivity.start(this, videoUri, defaultVideoUri, true)
         }
     }
 
