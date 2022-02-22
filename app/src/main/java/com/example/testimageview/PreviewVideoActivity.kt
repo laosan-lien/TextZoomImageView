@@ -1,45 +1,50 @@
 package com.example.testimageview
 
-import android.annotation.SuppressLint
+import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.MediaController
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import kotlinx.android.synthetic.main.activity_preview_image.*
 import kotlinx.android.synthetic.main.activity_preview_video.*
 import java.io.FileNotFoundException
 
-private const val MEDIA_URI = "media_uri"
-private const val DEFAULT_MEDIA_URI = "default_media_uri"
+private const val VIDEO_URI = "media_uri"
+private const val DEFAULT_VIDEO_URI = "default_media_uri"
 private const val TAG = "NativeUi:PreviewMedia"
-private const val IS_URI_LEGAL = "is_uri_legal"
 
-private const val IMAGE_EXTERNAL_CONTENT_URI = "content://media/external/images/media"
-private const val VIDEO_EXTERNAL_CONTENT_URI = "content://media/external/video/media"
-private const val CHECK_TYPE_IMAGE = "image"
-private const val CHECK_TYPE_VIDEO = "video"
-private const val MEDIA_URI_SCHEME = "scheme"
-private const val MEDIA_URI_AUTHORITY = "media"
+private const val ERROR_URI = "error_uri"
 
 class PreviewVideoActivity : AppCompatActivity() {
     companion object {
-        fun start(
-            context: Context,
-            imageUri: String,
-            defaultImageUri: String,
-            isUriLegal: Boolean
-        ) {
-            val intent = Intent(context, PreviewImageActivity::class.java)
-            intent.putExtra(MEDIA_URI, imageUri)
-            intent.putExtra(DEFAULT_MEDIA_URI, defaultImageUri)
-            intent.putExtra(IS_URI_LEGAL, isUriLegal)
-            context.startActivity(intent)
+        @RequiresApi(Build.VERSION_CODES.O)
+        fun start(context: Context, uri: String, defaultUri: String, displayId: Int) {
+            val parsedUri =
+                if (PreviewUtils.parsedUri(context, PreviewUtils.CHECK_TYPE_VIDEO, uri) != null)
+                    PreviewUtils.parsedUri(context, PreviewUtils.CHECK_TYPE_VIDEO, uri)
+                        .toString() else ERROR_URI
+            val parsedDefaultUri = if (PreviewUtils.parsedUri(
+                    context,
+                    PreviewUtils.CHECK_TYPE_VIDEO,
+                    defaultUri
+                ) != null
+            )
+                PreviewUtils.parsedUri(context, PreviewUtils.CHECK_TYPE_VIDEO, defaultUri)
+                    .toString() else ERROR_URI
+            val intent = Intent(context, PreviewVideoActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK
+            val options = ActivityOptions.makeBasic()
+            options.launchDisplayId = displayId
+            intent.putExtra(VIDEO_URI, parsedUri)
+            intent.putExtra(DEFAULT_VIDEO_URI, parsedDefaultUri)
+            context.startActivity(intent, options.toBundle())
         }
     }
 
@@ -47,46 +52,42 @@ class PreviewVideoActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_preview_video)
 
-        val videoUri = intent.getStringExtra(MEDIA_URI)
-        val defaultVideoUri = intent.getStringExtra(DEFAULT_MEDIA_URI)
-        if (videoUri != null && defaultVideoUri != null) {
-            previewVideo(videoUri, defaultVideoUri)
-        }
-        println("**********************************")
-        image_view.setImageDrawable(
-            ContextCompat.getDrawable(
-                this,
-                R.drawable.no_resources_found
+        val videoUri = Uri.parse(intent.getStringExtra(VIDEO_URI))
+        val defaultVideoUri = Uri.parse(intent.getStringExtra(DEFAULT_VIDEO_URI))
+        if (!loadVideo(videoUri) && !loadVideo(defaultVideoUri)) {
+            image_view.setImageDrawable(
+                ContextCompat.getDrawable(
+                    this,
+                    R.drawable.no_resources_found
+                )
             )
-        )
-
-    }
-
-    private fun previewVideo(videoUri: String, defaultUri: String) {
-
-        video_view.apply {
-            setMediaController(MediaController(context))
-            setVideoURI(Uri.parse(videoUri))
-            start()
-            setOnErrorListener { _, _, _ ->
-                Toast.makeText(this@PreviewVideoActivity, "未找到指定视频", Toast.LENGTH_SHORT).show()
-                setVideoURI(Uri.parse(defaultUri))
-                start()
-                return@setOnErrorListener true
-            }
         }
     }
 
-    private fun loadImage(uri: Uri): Boolean {
-        if (!Utils.checkUri(CHECK_TYPE_IMAGE, uri.toString())) {
-            return false
-        }
+    /**
+     * 获取媒体文件的三种方式：
+    1、文件流(use)
+    2、绝对路径
+    3、文件描述符
+     */
+    private fun loadVideo(uri: Uri): Boolean {
+        Log.d(TAG, "loadVideo: ${uri}")
         try {
-            contentResolver.openInputStream(uri).use {
-                image_view.setImageBitmap(BitmapFactory.decodeStream(it))
+            video_view.apply {
+                setMediaController(MediaController(context))
+                setVideoURI(uri)
+                start()
+                setOnErrorListener { _, _, _ ->
+                    Toast.makeText(this@PreviewVideoActivity, "未找到指定视频", Toast.LENGTH_SHORT).show()
+                    return@setOnErrorListener true
+                }
             }
         } catch (e: FileNotFoundException) {
-            Log.d(TAG, "the image URI:${uri} is incorrect")
+            Log.d(TAG, "the video URI:${uri} is incorrect")
+            return false
+        } catch (e: SecurityException) {
+            Toast.makeText(this, "未打开存储权限", Toast.LENGTH_SHORT)
+                .show()
             return false
         }
         return true

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     package="com.example.testimageview">
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -13,12 +12,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TestImageView">
         <activity
-            android:name=".PreviewImageActivity"
-            android:exported="true" />
-        <activity
-            android:name=".PreviewImageActivity"
-            android:exported="true" />
-        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
@@ -27,6 +20,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".PreviewImageActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".PreviewVideoActivity"
+            android:exported="true" />
     </application>
 
 </manifest>

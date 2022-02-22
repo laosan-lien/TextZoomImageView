@@ -1,76 +1,81 @@
 package com.example.testimageview
 
+
 import android.annotation.SuppressLint
 import android.content.ContentUris
 import android.content.Context
 import android.database.Cursor
+import android.hardware.display.DisplayManager
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
 
-private const val TAG = "Loasan:Utils"
+//import com.sample.mapp.uicomponent.DfsUrl
 
-private const val IMAGE_EXTERNAL_CONTENT_URI = "content://media/external/images/media"
-private const val VIDEO_EXTERNAL_CONTENT_URI = "content://media/external/video/media"
-private const val CHECK_TYPE_IMAGE = "image"
-private const val CHECK_TYPE_VIDEO = "video"
-private const val MEDIA_URI_SCHEME = "scheme"
-private const val MEDIA_URI_AUTHORITY = "media"
+private const val TAG = "Native:PreviewUtils"
+private const val HOME_DISPLAY_ID = 0
 
-class Utils {
+class PreviewUtils {
+
     companion object {
+        private const val SCHEME_HTTP = "http"
+        private const val SCHEME_HTTPS = "https"
+        private const val SCHEME_CONTENT = "content"
+
+        //        private const val SCHEME_DFS = "dfs"
+        const val CHECK_TYPE_IMAGE = "image"
+        const val CHECK_TYPE_VIDEO = "video"
 
         /**
-         * checkUri
-         * @param type: String ：检查的uri类型， image or video
-         * @param uri : String ：将要被检查的uri
+         * 检查contentUri，url的格式
          */
-        fun checkUri(type: String, uri: String): Boolean {
-            var isValid = false
-            if (uri.isNotEmpty()) {
-                when (Uri.parse(uri).scheme?.lowercase()) {
-                    "http", "https" -> {
-                        isValid = checkHttpUrl(uri)
-                    }
-                    "content" -> {
-                        isValid = checkContentUri(type, uri)
-                    }
-                    else -> {
-                        Log.d(TAG, "The scheme:${Uri.parse(uri).scheme} of the URI is incorrect")
-                    }
+        fun parsedUri(context: Context, checkType: String, uri: String): Uri? {
+            val parsedUri = Uri.parse(uri)
+            when (parsedUri.scheme?.lowercase()) {
+                SCHEME_HTTP, SCHEME_HTTPS -> {
+                    return parsedUri
+                }
+                SCHEME_CONTENT -> {
+                    return if (checkContentUri(checkType, parsedUri)) parsedUri else null
+                }
+//                SCHEME_DFS -> {
+//                    val parsedDfsUri = DfsUrl.parse(uri)
+//                    if (parsedDfsUri.isValid) {
+//                        parsedDfsUri.toLocalContentUri(context)
+//                            ?.let { contentUri ->
+//                                return if (checkContentUri(CHECK_TYPE_IMAGE, contentUri)) contentUri else null
+//                            }
+//                    } else {
+//                        return null
+//                    }
+//                }
+                else -> {
+                    Log.d(TAG, "The scheme:${Uri.parse(uri)} of the URI is incorrect")
                 }
             }
-            return isValid
+            return null
         }
 
-        private fun checkContentUri(checkType: String, uri: String): Boolean {
-            val uriWithoutID = removeUriId(Uri.parse(uri))
+        private fun checkContentUri(checkType: String, uri: Uri): Boolean {
+            val uriWithoutID = removeUriId(uri)
             if (uriWithoutID == null) {
                 return false
             } else {
-                when (checkType) {
+                return when (checkType) {
                     CHECK_TYPE_IMAGE -> {
-                        if (uriWithoutID.toString() != IMAGE_EXTERNAL_CONTENT_URI) {
-                            return false
-                        }
+                        uriWithoutID.toString()
+                            .equals(MediaStore.Images.Media.EXTERNAL_CONTENT_URI.toString(), true)
                     }
                     CHECK_TYPE_VIDEO -> {
-                        if (uriWithoutID.toString() != VIDEO_EXTERNAL_CONTENT_URI) {
-                            return false
-                        }
+                        uriWithoutID.toString()
+                            .equals(MediaStore.Video.Media.EXTERNAL_CONTENT_URI.toString(), true)
                     }
                     else -> {
                         Log.d(TAG, "Do not support check this type")
-                        return false
+                        false
                     }
                 }
             }
-            try {
-            } catch (e: NumberFormatException) {
-                Log.d(TAG, "the uri:${uri} is not legal")
-                return false
-            }
-            return true
         }
 
         private fun removeUriId(uri: Uri): Uri? {
@@ -93,58 +98,81 @@ class Utils {
             }
         }
 
-        //TODO:填上内容
-        private fun checkHttpUrl(httpUrl: String): Boolean {
-            if (httpUrl.isNotEmpty()) {
-                return Uri.parse(httpUrl).scheme.equals("http") || Uri.parse(httpUrl).scheme.equals(
-                    "https"
+
+        /**
+         * @name checkDisplayId
+         * @param context
+         * @param displayId 需要检查的displayId
+         */
+        fun checkDisplayId(context: Context, displayId: Int): Int {
+            val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+            if (displayId == 0) {
+                return HOME_DISPLAY_ID
+            } else {
+                //DisplayManager.DISPLAY_CATEGORY_PRESENTATION:此类别可用于识别适合用作演示显示器的辅助显示器，例如外部或无线显示器。
+                val presentationDisplays =
+                    displayManager.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
+                for (display in presentationDisplays) {
+                    Log.d(TAG, "Available displayId :{${display.displayId}}")
+                    if (displayId == display.displayId) {
+                        return displayId
+                    }
+                }
+                Log.d(
+                    TAG,
+                    "the specified displayId:{$displayId} does not exist, Default minimum available secondary " +
+                            "displayId"
                 )
+                return HOME_DISPLAY_ID
             }
-            return true
         }
+
+
+        /**
+         * 打印设备中的媒体文件
+         */
+        @SuppressLint("Recycle")
+        fun printMediaDetails(context: Context, uriType: String) {
+            if (uriType.isNotEmpty()) {
+                var cursor: Cursor? = null
+                when (uriType) {
+                    "image" -> {
+                        cursor = context.contentResolver.query(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            null, null, null, null
+                        )
+                        if (cursor != null) {
+                            while (cursor.moveToNext()) {
+                                val id =
+                                    cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
+                                val parsedUri = ContentUris.withAppendedId(
+                                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
+                                )
+                                println("parsedUri:${parsedUri}")
+                            }
+                        }
+                    }
+                    "video" -> {
+                        cursor = context.contentResolver.query(
+                            MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                            null, null, null, null
+                        )
+                        if (cursor != null) {
+                            while (cursor.moveToNext()) {
+                                val id =
+                                    cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
+                                val parsedUri = ContentUris.withAppendedId(
+                                    MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id
+                                )
+                                println("parsedUri:${parsedUri}")
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
+
     }
 
-    /**
-     * 打印设备中的媒体文件
-     */
-    @SuppressLint("Recycle")
-    fun printMediaDetails(context: Context, uriType: String) {
-        if (uriType.isNotEmpty()) {
-            var cursor: Cursor? = null
-            when (uriType) {
-                "image" -> {
-                    cursor = context.contentResolver.query(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        null, null, null, null
-                    )
-                    if (cursor != null) {
-                        while (cursor.moveToNext()) {
-                            val id =
-                                cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
-                            val parsedUri = ContentUris.withAppendedId(
-                                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
-                            )
-                            println("parsedUri:${parsedUri}")
-                        }
-                    }
-                }
-                "video" -> {
-                    cursor = context.contentResolver.query(
-                        MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                        null, null, null, null
-                    )
-                    if (cursor != null) {
-                        while (cursor.moveToNext()) {
-                            val id =
-                                cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
-                            val parsedUri = ContentUris.withAppendedId(
-                                MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id
-                            )
-                            println("parsedUri:${parsedUri}")
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
