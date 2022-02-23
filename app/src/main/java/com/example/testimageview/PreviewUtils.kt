@@ -22,7 +22,7 @@ class PreviewUtils {
         private const val SCHEME_HTTPS = "https"
         private const val SCHEME_CONTENT = "content"
 
-        //        private const val SCHEME_DFS = "dfs"
+        //private const val SCHEME_DFS = "dfs"
         const val CHECK_TYPE_IMAGE = "image"
         const val CHECK_TYPE_VIDEO = "video"
 
@@ -148,7 +148,7 @@ class PreviewUtils {
                                 val parsedUri = ContentUris.withAppendedId(
                                     MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
                                 )
-                                println("parsedUri:${parsedUri}")
+                                Log.d(TAG, "printMediaDetails:parsedUri:${parsedUri}")
                             }
                         }
                     }
@@ -164,7 +164,7 @@ class PreviewUtils {
                                 val parsedUri = ContentUris.withAppendedId(
                                     MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id
                                 )
-                                println("parsedUri:${parsedUri}")
+                                Log.d(TAG, "printMediaDetails:parsedUri:${parsedUri}")
                             }
                         }
                     }

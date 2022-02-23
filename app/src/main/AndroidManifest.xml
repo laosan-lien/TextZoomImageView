@@ -22,11 +22,11 @@
         </activity>
 
         <activity
-            android:name=".PreviewImageActivity"
+            android:name=".ImagePreviewerActivity"
             android:exported="true" />
 
         <activity
-            android:name=".PreviewVideoActivity"
+            android:name=".VideoPreviewerActivity"
             android:exported="true" />
     </application>
 
