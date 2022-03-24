@@ -58,7 +58,5 @@ class MainActivity : AppCompatActivity() {
             PreviewUtils.printMediaDetails(this, "video")
         }
     }
-
-
 }
 
